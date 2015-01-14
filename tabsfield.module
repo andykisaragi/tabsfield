@@ -1,18 +1,12 @@
 <?php
 
-// @todos:
+// @todos: write up todos, i guess
 
 
 /***************************************************************
  * Theme
  ***************************************************************/
 
-/*function tabsfield_theme_registry_alter(&$theme_registry){
-
-  drupal_set_message(print_r($theme_registry['field'],true));
-  drupal_set_message(print_r(array_keys($theme_registry),true));
-
-}*/
 
 function tabsfield_preprocess_field(&$vars){
 
@@ -88,7 +82,6 @@ function theme_tabsfield(&$vars){
   $field_id .= $unique_id;
 
   $field_id .= "-" . $vars['field_name']; 
-  drupal_set_message($field_id);
 
   $active_key = 0;
 
