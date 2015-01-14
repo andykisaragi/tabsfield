@@ -1,0 +1,19 @@
+
+.tabsfield-nav ul {
+  margin: 0;
+  padding: 0;
+}
+.tabsfield-nav li {
+  cursor: pointer;
+  list-style: none;
+  font-size: 16px;
+  float: left;
+  padding: 10px 15px 3px;
+  background-color: #ddd;
+  border-radius: 5px 5px 0 0;
+  margin-right: 2px;
+}
+.tabsfield-nav li.active{
+  color: #000;
+  background-color: #eee;
+}

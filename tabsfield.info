@@ -1,0 +1,4 @@
+name = Tabs field
+description = Title & body fields, which display as tabs when multiple values are filled in 
+core = 7.x
+version = 1.0

@@ -1,0 +1,351 @@
+<?php
+
+// @todos:
+
+
+/***************************************************************
+ * Theme
+ ***************************************************************/
+
+/*function tabsfield_theme_registry_alter(&$theme_registry){
+
+  drupal_set_message(print_r($theme_registry['field'],true));
+  drupal_set_message(print_r(array_keys($theme_registry),true));
+
+}*/
+
+function tabsfield_preprocess_field(&$vars){
+
+  if($vars['element']['#field_type'] == 'tabsfield'){
+
+    // let's get hacky!
+    // so that we can render our tabs field how we want without a theme / template override,
+    // we group all the items together into one item.
+
+    // keep the first item as a template
+    $orig_item = $vars['items'][0];
+
+    $titles = [];
+    $bodies = [];
+
+    foreach($vars['items'] as $key => $item){
+
+      // grab title & body from each item, whack em in an array
+      // yup: whack em
+      $titles[] = $item['#title'];
+      $bodies[] = $item['#body'];
+
+      // after we've got what we want from each item, kick it to the kerb
+      unset($vars['items'][$key]);
+
+    }
+
+    // shove our arrays back into the template item in place of the single values.
+    $orig_item['#title'] = $titles;
+    $orig_item['#body'] = $bodies;
+    $vars['items'][0] = [$orig_item];
+
+  }
+
+}
+
+function tabsfield_theme($existing, $type, $theme, $path){
+
+  $items = array();
+
+  $items['tabsfield'] = array(
+
+    //'template' => 'keyimage-carousel',
+    'variables' => array(
+      'title' => null,
+      'body' => null,
+      'entity_type' => null,
+      'entity' => null,
+      'delta' => null,
+      'field_name' => null,
+    ),
+  
+  );
+
+  return $items;
+
+}
+
+
+function theme_tabsfield(&$vars){
+
+  drupal_add_js(drupal_get_path("module","tabsfield") . "/tabsfield.js");
+  drupal_add_css(drupal_get_path("module","tabsfield") . "/tabsfield.css");
+
+  $field_id = "tabsfield-" . $vars['entity_type'] . "-";
+  if($vars['entity_type'] == 'node'){
+    $unique_id = $vars['entity']->nid;
+    // @todo - get other entity IDs
+  }else{
+    $unique_id = rand();
+  }
+
+  $field_id .= $unique_id;
+
+  $field_id .= "-" . $vars['field_name']; 
+  drupal_set_message($field_id);
+
+  $active_key = 0;
+
+  $tabs_header = '<ul>';
+  foreach($vars['title'] as $key => $title){
+
+    $class = ($key == $active_key) ? 'class="active"' : '';
+
+    $tabs_header .= '<li id="' . $field_id . '-nav-' . $key . '" toggle="#' . $field_id . '-tab-' . $key . '" ' . $class . '>' . $title . '</li>';
+
+  }
+  $tabs_header .= '</ul>';
+
+  $tabs_body = '';
+
+  foreach($vars['body'] as $key => $body){
+    
+    $style = ($key != $active_key) ? 'style="display: none;"' : '';
+
+    //if (!$tab['display']) print '';
+
+    $tabs_body .= '<div class="toggle-page" id="' . $field_id . '-tab-' . $key . '" ' . $style . '>' . $body . '</div>';
+
+
+  }
+/*
+
+  <div id="premium-tabs-nav">
+          <ul>
+            <?php foreach($premium_tabs as $id => $tab){ ?>
+              <li id="nav-<?php print $id;?>" <?php if ($tab['display']) print 'class="active"';?> toggle="#premium-tabs-tab-<?php print $id; ?>"><?php print $tab['title']; ?></li>
+            <?php } ?>
+          </ul>
+          <div style="clear: both;"></div>      
+            
+        </div>
+        <?php foreach($premium_tabs as $id => $tab){ ?>
+          <div class="toggle-page" id="premium-tabs-tab-<?php print $id; ?>" <?php if (!$tab['display']) print 'style="display: none;"';?>>
+            <?php print $tab['content']; ?>
+          </div>
+        <?php } ?>
+
+        */
+
+   // $output = '<div class="tabsfield-title" id="title-' . $field_id . '">' . $vars['title'] . '</div>';
+    // $output .= '<div class="tabsfield-body" id="body-' . $field_id . '">' . $vars['body'] . '</div>';
+
+  $output = '<div class="tabsfield-nav">' . $tabs_header . '</div><div class="clearfix"></div>' . $tabs_body ;
+  return $output;
+
+}
+
+
+
+
+/***************************************************************
+ * Field Hooks
+ ***************************************************************/
+
+/**
+ * Implements hook_field_info().
+ *
+ * Provides the description of the field.
+ */
+function tabsfield_field_info() {
+  return array(
+    // We name our field as the associative name of the array.
+    'tabsfield' => array(
+      'label' => t('Tabs'),
+      'description' => t(''),
+      'default_widget' => 'tabsfield_textareas',
+      'default_formatter' => 'tabsfield_default',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_validate().
+ *
+ * @see tabsfield_field_widget_error()
+ */
+function tabsfield_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+  foreach ($items as $delta => $item) {
+
+  }
+}
+
+/**
+ * Implements hook_field_presave().
+ */
+function tabsfield_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+
+  foreach ($items as $delta => $value) {
+    $items[$delta]['title_value'] = $items[$delta]['title'];
+    //$items[$delta]['title_format'] = $items[$delta]['title']['format'];
+    $items[$delta]['body_value'] = $items[$delta]['body']['value'];
+    $items[$delta]['body_format'] = $items[$delta]['body']['format'];
+  }
+}
+
+
+/**
+ * Implements hook_field_is_empty().
+ *
+ */
+function tabsfield_field_is_empty($item, $field) {
+  return empty($item['title']);
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ *
+ *
+ * @see tabsfield_field_formatter_view()
+ */
+function tabsfield_field_formatter_info() {
+  return array(
+    'tabsfield_default' => array(
+      'label' => t('default tabs field'),
+      'field types' => array('title_body'),
+    ),
+ 
+  );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ * Two formatters are implemented.
+ * - tabsfield_default just outputs markup indicating the color that
+ *   was entered and uses an inline style to set the text color to that value.
+ * - tabsfield_color_background does the same but also changes the
+ *   background color of div.region-content.
+ *
+ * @see tabsfield_field_formatter_info()
+ */
+function tabsfield_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    // This formatter simply outputs the field as text and with a color.
+    case 'tabsfield_default':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          // We create a render array to produce the desired markup,
+          // "<p style="color: #hexcolor">The color code ... #hexcolor</p>".
+          // See theme_html_tag().
+          '#theme' => 'tabsfield',
+          '#title' => $item['title_value'],
+          '#body' => check_markup($item['body_value'],$item['body_format']),
+          '#delta' => $delta,
+          '#entity' => $entity,
+          '#entity_type' => $entity_type,
+          '#field_name' => $instance['field_name'],
+        );
+      }
+      break;
+
+
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ *
+ * Three widgets are provided.
+ * - A simple text-only widget where the user enters the '#ffffff'.
+ * - A 3-textfield widget that gathers the red, green, and blue values
+ *   separately.
+ * - A farbtastic colorpicker widget that chooses the value graphically.
+ *
+ * These widget types will eventually show up in hook_field_widget_form,
+ * where we will have to flesh them out.
+ *
+ * @see tabsfield_field_widget_form()
+ */
+function tabsfield_field_widget_info() {
+  return array(
+
+    'tabsfield_textareas' => array(
+      'label' => t('Title & body text fields'),
+      'field types' => array('tabsfield'),
+    ),
+
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function tabsfield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+
+  $widget = $element;
+  $widget['#delta'] = $delta;
+
+  switch ($instance['widget']['type']) {
+
+    case 'tabsfield_textareas':
+
+      // Make this a fieldset with the two text areas.
+      $widget += array(
+        '#type' => 'fieldset',
+        '#delta' => $delta,
+      );
+
+      $title_widget = array(
+          '#type' => 'textfield',
+          '#title' => 'title',
+          '#default_value' => isset($items[$delta]['title_value']) ? $items[$delta]['title_value'] : NULL,
+          '#attributes' => array('class' => array('qa-textarea text-full')),
+          '#description' => t(''),
+      );
+      $body_widget = array(
+          '#type' => 'textarea',
+          '#title' => 'body',
+          '#default_value' => isset($items[$delta]['body_value']) ? $items[$delta]['body_value'] : NULL,
+          '#attributes' => array('class' => array('qa-textarea text-full')),
+          '#description' => t(''),
+      );
+
+
+      $element = $widget;
+      $element['title'] = $title_widget;
+      $element['body'] = $body_widget;
+    
+      $element['body']['#type'] = 'text_format';
+      $element['body']['#format'] = isset($items[$delta]['body_format']) ? $items[$delta]['body_format'] : NULL;
+      $element['body']['#base_type'] = $body_widget['#type'];
+        
+      
+   
+      break;
+
+
+  }
+
+  return $element;
+}
+
+
+/**
+ * Implements hook_field_widget_error().
+ *
+ * hook_field_widget_error() lets us figure out what to do with errors
+ * we might have generated in hook_field_validate(). Generally, we'll just
+ * call form_error().
+ *
+ * @see tabsfield_field_validate()
+ * @see form_error()
+ */
+function tabsfield_field_widget_error($element, $error, $form, &$form_state) {
+  switch ($error['error']) {
+    case 'tabsfield_invalid':
+      form_error($element, $error['message']);
+      break;
+  }
+}
+
