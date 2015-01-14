@@ -208,7 +208,7 @@ function tabsfield_field_formatter_info() {
   return array(
     'tabsfield_default' => array(
       'label' => t('default tabs field'),
-      'field types' => array('title_body'),
+      'field types' => array('tabsfield'),
     ),
  
   );
